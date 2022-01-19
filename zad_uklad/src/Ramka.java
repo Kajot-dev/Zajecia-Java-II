@@ -1,8 +1,12 @@
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 
 public class Ramka extends JFrame {
     private final LayoutManager layout = new BorderLayout();
@@ -16,22 +20,30 @@ public class Ramka extends JFrame {
     private final JCheckBox toggleOrbit = new JCheckBox("Poka¿ orbitê", true);
     private Uklad animPanel;
     public Ramka() {
-        final Uklad.Planeta[] planety = new Uklad.Planeta[] {
-                new Uklad.Planeta("S³oñce", 0d, 60, 0d, Color.YELLOW),
-                new Uklad.Planeta("Merkury", 60d, 20, 1 / 0.2408d, Color.GRAY),
-                new Uklad.Planeta("Wenus", 100d, 40, 1 / 0.6152d, Color.RED),
-                new Uklad.Planeta("Ziemia", 170d, 50, 1d, Color.GREEN, new Uklad.Planeta[] {
-                        new Uklad.Planeta("Ksiê¿yc", 40d, 15, 1d, Color.GRAY)
-                }),
-                new Uklad.Planeta("Mars", 240d, 45, 1 / 1.8808d, Color.ORANGE),
-                new Uklad.Planeta("Jowisz", 350d, 150, 1 / 11.86d, Color.MAGENTA)
-        };
-        this.animPanel = new Uklad(planety);
-        this.initGui();
-        this.setSize(1000, 800);
-        this.setVisible(true);
-        this.setDefaultCloseOperation(EXIT_ON_CLOSE);
-        this.animPanel.startRendering();
+        try {
+            BufferedImage earthImage = ImageIO.read(new File("img/earth.png"));
+            BufferedImage venusImage = ImageIO.read(new File("img/venus.png"));
+            BufferedImage jupyterImage = ImageIO.read(new File("img/jowisz.png"));
+            final Uklad.Planeta[] planety = new Uklad.Planeta[] {
+                    new Uklad.Planeta("S³oñce", 0d, 60, 0d, Color.YELLOW),
+                    new Uklad.Planeta("Merkury", 60d, 20, 1 / 0.2408d, Color.GRAY),
+                    new Uklad.Planeta("Wenus", 100d, 40, 1 / 0.6152d, venusImage),
+                    new Uklad.Planeta("Ziemia", 170d, 50, 1d, earthImage, new Uklad.Planeta[] {
+                            new Uklad.Planeta("Ksiê¿yc", 40d, 15, 1d, Color.GRAY)
+                    }),
+                    new Uklad.Planeta("Mars", 240d, 45, 1 / 1.8808d, Color.ORANGE),
+                    new Uklad.Planeta("Jowisz", 350d, 150, 1 / 11.86d, jupyterImage)
+            };
+            this.animPanel = new Uklad(planety);
+            this.initGui();
+            this.setSize(1000, 800);
+            this.setVisible(true);
+            this.setDefaultCloseOperation(EXIT_ON_CLOSE);
+            this.animPanel.startRendering();
+        } catch (IOException e) {
+            System.err.println("Error loading images!");
+            System.exit(-1);
+        }
     }
 
     private void initGui() {
@@ -53,6 +65,7 @@ public class Ramka extends JFrame {
         var text = Uklad.Planeta.calculateSpeed().toString();
         this.speed.setText(text);
         this.speed.addKeyListener(new KeyAdapter() {
+            @Override
             public void keyReleased(KeyEvent e) {
                 JTextField textField = (JTextField) e.getSource();
                 try {
@@ -70,7 +83,7 @@ public class Ramka extends JFrame {
         this.add(this.animPanel);
     }
 
-    private ActionListener listener = (e) -> {
+    private final ActionListener listener = e -> {
         var source = e.getSource();
         if (source == speedUp) {
             this.animPanel.triggerOperation(Uklad.Operation.SPEED_UP);
@@ -87,7 +100,7 @@ public class Ramka extends JFrame {
     };
 
     public static void main (String[] args) {
-        var r = new Ramka();
+        new Ramka();
 
     }
 }

@@ -13,7 +13,7 @@ public class Uklad extends JPanel {
         }
 
         public static Integer calculateSpeed() {
-            return (Integer) ((int) (Planeta.getAnglePerTick() / 0.1d));
+            return (int) (Planeta.getAnglePerTick() / 0.1d);
         }
 
         private static double anglePerTick = 1d;
@@ -22,9 +22,15 @@ public class Uklad extends JPanel {
         private final double distance;
         private final double size;
         private final double relativeSpeed;
-        private final Color color;
+        private Color color = null;
+        private Image img = null;
         private Planeta[] children = null;
         private double angle;
+        private renderType type;
+        public enum renderType {
+            IMAGE,
+            COLOR
+        }
 
 
         public Planeta(String name, double distance, double size, double relativeSpeed, Color color) {
@@ -32,11 +38,35 @@ public class Uklad extends JPanel {
             this.distance = distance;
             this.size = size;
             this.relativeSpeed = relativeSpeed;
+            this.type = renderType.COLOR;
             this.color = color;
+        }
+
+        public Planeta(String name, double distance, double size, double relativeSpeed, Image img) {
+            this.name = name;
+            this.distance = distance;
+            this.size = size;
+            this.relativeSpeed = relativeSpeed;
+            this.type = renderType.IMAGE;
+            var imgWidth = img.getWidth(null);
+            var imgHeight = img.getHeight(null);
+            double proportions = imgWidth / (double) imgHeight;
+            if (imgWidth > imgHeight) {
+                imgWidth = (int) this.size;
+                imgHeight = (int) (imgWidth / proportions);
+            } else {
+                imgHeight = (int) this.size;
+                imgWidth = (int) (imgHeight * proportions);
+            }
+            this.img = img.getScaledInstance(imgWidth, imgHeight, 0);
         }
 
         public Planeta(String name, double distance, double size, double relativeSpeed, Color color, Planeta[] children) {
             this(name, distance, size, relativeSpeed, color);
+            this.children = children;
+        }
+        public Planeta(String name, double distance, double size, double relativeSpeed, Image img, Planeta[] children) {
+            this(name, distance, size, relativeSpeed, img);
             this.children = children;
         }
         public void draw(Graphics g, Point origin) {
@@ -51,9 +81,9 @@ public class Uklad extends JPanel {
                     g2.drawOval((int) (x - this.distance), (int) (y - this.distance), (int) t, (int) t);
                 }
 
-                double angle = this.getAngle();
-                x = x + this.distance * Math.cos(angle);
-                y = y + this.distance * Math.sin(angle);
+                double tempAngle = this.getAngle();
+                x = x + this.distance * Math.cos(tempAngle);
+                y = y + this.distance * Math.sin(tempAngle);
             }
 
             if (this.children != null) {
@@ -65,9 +95,14 @@ public class Uklad extends JPanel {
 
             x -= this.size / 2;
             y -= this.size / 2;
-            g2.setColor(this.color);
+            if (this.type == renderType.COLOR) {
+                g2.setColor(this.color);
 
-            g2.fillOval((int) x,(int) y,(int) this.size,(int) this.size);
+                g2.fillOval((int) x,(int) y,(int) this.size,(int) this.size);
+            } else if (this.type == renderType.IMAGE) {
+                g2.drawImage(this.img, (int) x, (int) y, null);
+            }
+
         }
 
         public void tickAngle() {
@@ -82,9 +117,9 @@ public class Uklad extends JPanel {
         public double getAngle() {
             return Math.toRadians(this.angle);
         }
-    };
+    }
 
-    private Planeta[] planety = new Planeta[0];
+    private Planeta[] planety;
 
     public enum Operation {
         SPEED_UP,
@@ -94,25 +129,19 @@ public class Uklad extends JPanel {
 
     public void triggerOperation(Operation o) {
         switch (o) {
-            case SPEED_UP -> {
+            case SPEED_UP ->
                 Planeta.anglePerTick += 0.1d;
-                break;
-            }
             case SLOW_DOWN -> {
                 double n = Planeta.anglePerTick - 0.1d;
                 if (n <= 0d) n = 0d;
                 Planeta.anglePerTick = n;
-                break;
             }
-            case SHOW_ORBIT -> {
+            case SHOW_ORBIT ->
                 Planeta.showOrbit = !Planeta.showOrbit;
-                break;
-            }
-
         }
     }
 
-    private int tick = 1000 / 60;
+    private final int tick = 1000 / 60;
     private Thread animThread;
 
 
@@ -143,6 +172,7 @@ public class Uklad extends JPanel {
         }
     };
 
+    @Override
     public void paint(Graphics g) {
         super.paint(g);
         this.render(g);
